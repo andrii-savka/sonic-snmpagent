@@ -34,6 +34,7 @@ class SonicMIB(
     cisco.ciscoPfcExtMIB.cpfcIfTable,
     cisco.ciscoPfcExtMIB.cpfcIfPriorityTable,
     cisco.ciscoSwitchQosMIB.csqIfQosGroupStatsTable,
+    cisco.ciscoEntityFRUControlMIB.cefcFRUPowerStatusTable,
 ):
     """
     If SONiC was to create custom MIBEntries, they may be specified here.
