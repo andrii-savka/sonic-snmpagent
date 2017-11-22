@@ -5,6 +5,8 @@ from sonic_ax_impl import mibs
 from ax_interface import MIBMeta, ValueType, MIBUpdater, MIBEntry, SubtreeMIBEntry
 from ax_interface.encodings import ObjectIdentifier
 
+import pdb
+
 class PfcUpdater(MIBUpdater):
 
     def reinit_data(self):
@@ -16,6 +18,8 @@ class PfcUpdater(MIBUpdater):
         self.if_id_map, \
         self.oid_sai_map, \
         self.oid_name_map = mibs.init_sync_d_interface_tables(self.db_conn)
+
+        self.update_data()
 
     def update_data(self):
         """
@@ -53,6 +57,10 @@ class PfcUpdater(MIBUpdater):
         :param sub_id: The 1-based sub-identifier query.
         :return: the next sub id.
         """
+
+        print ("PfcUpdater - get_next")
+        print ("sub_id = " + str(sub_id))
+
         try:
             if sub_id is None:
                 return self.if_range[0]
@@ -80,6 +88,9 @@ class PfcUpdater(MIBUpdater):
         :param counter_name: the redis table (either IntEnum or string literal) to query.
         :return: the counter for the respective sub_id/table.
         """
+
+#        pdb.set_trace()
+
         sai_id = self.oid_sai_map[oid]
 
         # Enum.name or counter_name = 'name_of_the_table'
@@ -136,9 +147,28 @@ class PfcUpdater(MIBUpdater):
             return self._get_counter(oid, counter_name)
 
 
+# cpfcIfTable = '1.1'
+# cpfcIfEntry = '1.1.1.x'
+class cpfcIfTable(metaclass=MIBMeta, prefix='.1.3.6.1.4.1.9.9.813.1.1'):
+    """
+    'ciscoPfcExtMIB' http://oidref.com/1.3.6.1.4.1.9.9.813.1.1
+    """
+    pfc_updater = PfcUpdater()
+
+    ifRequests = \
+        SubtreeMIBEntry('1.1', pfc_updater, ValueType.INTEGER, pfc_updater.cpfcIfRequests)
+
+    ifIndications = \
+        SubtreeMIBEntry('1.2', pfc_updater, ValueType.INTEGER, pfc_updater.cpfcIfIndications)
+
+
 class PfcPrioUpdater(PfcUpdater):
     def __init__(self):
         super().__init__()
+
+        print ("PfcPrioUpdater init, if_range = " + str(self.if_range))
+
+        self.min_prio = 1
         self.max_prio = 8
 
     def queue_index(self, sub_id):
@@ -155,36 +185,32 @@ class PfcPrioUpdater(PfcUpdater):
         :param sub_id: The 1-based sub-identifier query.
         :return: the next sub id.
         """
-        try:
-            if sub_id is None:
-               return (self.if_range[0][0], 1)
 
-            if len(sub_id) < 2:
-               return (sub_id[0], 1)
+        print ("PfcPrioUpdater - get_next")
+        print ("sub_id = " + str(sub_id))
 
-            if sub_id[1] >= self.max_prio:
-                return None
+        if sub_id is None or not sub_id:
+            print ("PfcPrioUpdater - sub_id empty")
+            return (self.min_prio)
 
-            right = sub_id[1] + 1
+        if sub_id[0] < self.max_prio:
+            print ("PfcPrioUpdater - return " + str((sub_id[0] + 1)))
+            return None #(sub_id[0] + 1)
 
-            return (sub_id[0], right)
-        except (IndexError, KeyError) as e:
-            mibs.logger.error("failed to get next oid with error = {}".format(str(e)))
+        print ("PfcPrioUpdater - ret None")
 
-    def requestsPerPriority(self, sub_id):
+    def requestsPerPriority(self, port_oid, queue_index):
         """
         :param sub_id: The 1-based sub-identifier query.
         :return: the counter for the respective sub_id/table.
-        """        
-        port_oid = ''
-        queue_index = ''
-        try:
-            port_oid = self.get_oid((sub_id[0],))
-            queue_index = self.queue_index(sub_id)
-            if port_oid is None or queue_index is None:
-                return None
-        except (IndexError, KeyError):
-            mibs.logger.warning("requestsPerPriority: incorrect sub_id = {}".format(str(sub_id)))
+        """
+
+        print ("PfcPrioUpdater - requestsPerPriority")
+        if port_oid is None:
+            mibs.logger.warning("requestsPerPriority: port_oid is None")
+            return None
+        if queue_index is None:
+            mibs.logger.warning("requestsPerPriority: queue_index is None")
             return None
 
         counter_name = 'SAI_PORT_STAT_PFC_' + str(queue_index) + '_RX_PKTS'
@@ -198,20 +224,19 @@ class PfcPrioUpdater(PfcUpdater):
         else:
             return self._get_counter(port_oid, counter_name)
 
-    def indicationsPerPriority(self, sub_id):
+    def indicationsPerPriority(self, port_oid, queue_index):
         """
         :param sub_id: The 1-based sub-identifier query.
         :return: the counter for the respective sub_id/table.
         """
-        port_oid = ''
-        queue_index = ''
-        try:
-            port_oid = self.get_oid((sub_id[0],))
-            queue_index = self.queue_index(sub_id)
-            if port_oid is None or queue_index is None:
-                return None
-        except (IndexError, KeyError):
-            mibs.logger.warning("indicationsPerPriority: incorrect sub_id = {}".format(str(sub_id)))
+
+        print ("PfcPrioUpdater - indicationsPerPriority")
+
+        if port_oid is None:
+            mibs.logger.warning("indicationsPerPriority: port_oid is None")
+            return None
+        if queue_index is None:
+            mibs.logger.warning("indicationsPerPriority: queue_index is None")
             return None
 
         counter_name = 'SAI_PORT_STAT_PFC_' + str(queue_index) + '_TX_PKTS'
@@ -225,32 +250,51 @@ class PfcPrioUpdater(PfcUpdater):
         else:
             return self._get_counter(port_oid, counter_name)
 
+class PfcPrioHandler:
+    _updater = PfcPrioUpdater()
 
-# cpfcIfTable = '1.1'
-# cpfcIfEntry = '1.1.1.x'
-class cpfcIfTable(metaclass=MIBMeta, prefix='.1.3.6.1.4.1.9.9.813.1.1'):
-    """
-    'ciscoPfcExtMIB' http://oidref.com/1.3.6.1.4.1.9.9.813.1.1
-    """
-    pfc_updater = PfcUpdater()
+    @classmethod
+    def ifindex_range(cls):
+        interfaces = []
+        print ("ifindex_range if_range = " + str(cls._updater.if_range))
+        for ifindex in cls._updater.if_range:
+            interfaces.append(ifindex[0])
+        return interfaces
 
-    ifRequests = \
-        SubtreeMIBEntry('1.1', pfc_updater, ValueType.INTEGER, pfc_updater.cpfcIfRequests)
+    def __init__(self, port):
+        self.ifindex = port
 
-    ifIndications = \
-        SubtreeMIBEntry('1.2', pfc_updater, ValueType.INTEGER, pfc_updater.cpfcIfIndications)
+    def get_next(self, sub_id):
+        # pdb.set_trace()
+        print ("Handler get_next sub_id = " + str(sub_id))
+        next = self._updater.get_next(sub_id)
+        print ("Handler get_next sub_id = " + str(sub_id) + " ret = " + str(next))
+        return next
+
+    def handleRequestsPerPriority(self, sub_id):
+        # pdb.set_trace()
+        print ('handleRequestsPerPriority obj id = ' + str(self))
+        queue_index = _updater.queue_index(sub_id)
+        return _updater.requestsPerPriority(self.ifindex, queue_index)
+
+    def handleIndicationsPerPriority(self, sub_id):
+        print ('handleIndicationsPerPriority')
+        queue_index = _updater.queue_index(sub_id)
+        return _updater.indicationsPerPriority(self.ifindex, queue_index)
 
 
 # cpfcIfPriorityTable = '1.2'
 # cpfcIfPriorityEntry = '1.2.x'
+
 class cpfcIfPriorityTable(metaclass=MIBMeta, prefix='.1.3.6.1.4.1.9.9.813.1.2'):
     """
     'ciscoPfcExtMIB' http://oidref.com/1.3.6.1.4.1.9.9.813
     """
-    pfc_updater = PfcPrioUpdater()
+    oid_range = PfcPrioHandler.ifindex_range()
 
-    prioRequests = \
-        SubtreeMIBEntry('1.2', pfc_updater, ValueType.INTEGER, pfc_updater.requestsPerPriority)
+    for index in oid_range:
+        pfc_prio_handler = PfcPrioHandler(index)
+        print ("register 1.2.{} SubtreeMIBEntry".format(index) + " pfc_prio_handler obj = " + str(pfc_prio_handler))
+        prioRequests = SubtreeMIBEntry("1.2.{}".format(index), pfc_prio_handler, ValueType.INTEGER, pfc_prio_handler.handleRequestsPerPriority)
+        prioIndications = SubtreeMIBEntry("1.3.{}".format(index), pfc_prio_handler, ValueType.INTEGER, pfc_prio_handler.handleIndicationsPerPriority)
 
-    prioIndications = \
-        SubtreeMIBEntry('1.3', pfc_updater, ValueType.INTEGER, pfc_updater.indicationsPerPriority)
