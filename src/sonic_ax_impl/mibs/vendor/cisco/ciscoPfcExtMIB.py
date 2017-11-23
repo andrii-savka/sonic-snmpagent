@@ -54,7 +54,7 @@ class PfcUpdater(MIBUpdater):
         :return: the next sub id.
         """
         try:
-            if sub_id is None:
+            if not sub_id:
                 return self.if_range[0]
 
             right = bisect_right(self.if_range, sub_id)
@@ -139,6 +139,7 @@ class PfcUpdater(MIBUpdater):
 class PfcPrioUpdater(PfcUpdater):
     def __init__(self):
         super().__init__()
+        self.min_prio = 1
         self.max_prio = 8
 
     def queue_index(self, sub_id):
@@ -156,20 +157,25 @@ class PfcPrioUpdater(PfcUpdater):
         :return: the next sub id.
         """
         try:
-            if sub_id is None:
-               return (self.if_range[0][0], 1)
+            if not sub_id:
+               return self.if_range[0][0], self.min_prio
 
             if len(sub_id) < 2:
-               return (sub_id[0], 1)
+               return (sub_id[0], self.min_prio)
 
             if sub_id[1] >= self.max_prio:
-                return None
+                idx = self.if_range.index((sub_id[0],))
+                return self.if_range[idx + 1][0], self.min_prio
 
             right = sub_id[1] + 1
 
-            return (sub_id[0], right)
-        except (IndexError, KeyError) as e:
+            return sub_id[0], right
+        except IndexError:
+            mibs.logger.debug("Found last element.")
+            return None
+        except Exception as e:
             mibs.logger.error("failed to get next oid with error = {}".format(str(e)))
+            return None
 
     def requestsPerPriority(self, sub_id):
         """
@@ -179,12 +185,15 @@ class PfcPrioUpdater(PfcUpdater):
         port_oid = ''
         queue_index = ''
         try:
+            if not sub_id:
+                return None
+
             port_oid = self.get_oid((sub_id[0],))
             queue_index = self.queue_index(sub_id)
             if port_oid is None or queue_index is None:
                 return None
-        except (IndexError, KeyError):
-            mibs.logger.warning("requestsPerPriority: incorrect sub_id = {}".format(str(sub_id)))
+        except Exception as e:
+            mibs.logger.warning("requestsPerPriority: incorrect sub_id = {} error: {}".format(str(sub_id), e))
             return None
 
         counter_name = 'SAI_PORT_STAT_PFC_' + str(queue_index) + '_RX_PKTS'
@@ -206,11 +215,14 @@ class PfcPrioUpdater(PfcUpdater):
         port_oid = ''
         queue_index = ''
         try:
+            if not sub_id:
+                return None
+
             port_oid = self.get_oid((sub_id[0],))
             queue_index = self.queue_index(sub_id)
             if port_oid is None or queue_index is None:
                 return None
-        except (IndexError, KeyError):
+        except IndexError:
             mibs.logger.warning("indicationsPerPriority: incorrect sub_id = {}".format(str(sub_id)))
             return None
 
