@@ -187,8 +187,10 @@ def init_sync_d_queue_tables(db_conn):
     # Parse the queue_name_map and create the following maps:
     # port_queues_map -> {"if_index : queue_index" : sai_oid}
     # queue_stat_map -> {queue stat table name : {counter name : value}}
+    # port_queue_list_map -> {if_index: [sorted queue list]}
     port_queues_map = {}
     queue_stat_map = {}
+    port_queue_list_map = {}
 
     for queue_name, sai_id in queue_name_map.items():
         port_name, queue_index = queue_name.decode().split(':')
@@ -202,6 +204,11 @@ def init_sync_d_queue_tables(db_conn):
         if queue_stat is not None:
             queue_stat_map[queue_stat_name] = queue_stat
 
+        if not port_queue_list_map.get(int(port_index)):
+            port_queue_list_map[int(port_index)] = [int(queue_index)]
+        else:
+            port_queue_list_map[int(port_index)].append(int(queue_index))
+
     # SyncD consistency checks.
     if not port_queues_map:
         # In the event no queue exists that follows the SONiC pattern, no OIDs are able to be registered.
@@ -212,5 +219,8 @@ def init_sync_d_queue_tables(db_conn):
         logger.error("No queue stat counters found in the Counter DB. SyncD database is incoherent.")
         raise RuntimeError('The queue_stat_map is not defined')
 
-    return port_queues_map, queue_stat_map
+    for queues in port_queue_list_map.values():
+        queues.sort()
+
+    return port_queues_map, queue_stat_map, port_queue_list_map
 
