@@ -94,7 +94,7 @@ class PfcUpdater(MIBUpdater):
             mibs.logger.warning("SyncD 'COUNTERS_DB' missing attribute '{}'.".format(e))
             return None
 
-    def cpfcIfRequests(self, sub_id):
+    def cpfc_if_requests(self, sub_id):
         """
         :param sub_id: The 1-based sub-identifier query.
         :return: the counter for the respective sub_id/table.
@@ -115,7 +115,7 @@ class PfcUpdater(MIBUpdater):
             return self._get_counter(oid, counter_name)
 
 
-    def cpfcIfIndications(self, sub_id):
+    def cpfc_if_indications(self, sub_id):
         """
         :param sub_id: The 1-based sub-identifier query.
         :return: the counter for the respective sub_id/table.
@@ -158,10 +158,10 @@ class PfcPrioUpdater(PfcUpdater):
         """
         try:
             if not sub_id:
-               return self.if_range[0][0], self.min_prio
+                return self.if_range[0][0], self.min_prio
 
             if len(sub_id) < 2:
-               return (sub_id[0], self.min_prio)
+                return sub_id[0], self.min_prio
 
             if sub_id[1] >= self.max_prio:
                 idx = self.if_range.index((sub_id[0],))
@@ -171,13 +171,13 @@ class PfcPrioUpdater(PfcUpdater):
 
             return sub_id[0], right
         except IndexError:
-            mibs.logger.debug("Found last element.")
+            # Reached the last element. Return None to notify caller
             return None
         except Exception as e:
             mibs.logger.error("failed to get next oid with error = {}".format(str(e)))
             return None
 
-    def requestsPerPriority(self, sub_id):
+    def requests_per_priority(self, sub_id):
         """
         :param sub_id: The 1-based sub-identifier query.
         :return: the counter for the respective sub_id/table.
@@ -207,7 +207,7 @@ class PfcPrioUpdater(PfcUpdater):
         else:
             return self._get_counter(port_oid, counter_name)
 
-    def indicationsPerPriority(self, sub_id):
+    def indications_per_priority(self, sub_id):
         """
         :param sub_id: The 1-based sub-identifier query.
         :return: the counter for the respective sub_id/table.
@@ -247,10 +247,10 @@ class cpfcIfTable(metaclass=MIBMeta, prefix='.1.3.6.1.4.1.9.9.813.1.1'):
     pfc_updater = PfcUpdater()
 
     ifRequests = \
-        SubtreeMIBEntry('1.1', pfc_updater, ValueType.INTEGER, pfc_updater.cpfcIfRequests)
+        SubtreeMIBEntry('1.1', pfc_updater, ValueType.INTEGER, pfc_updater.cpfc_if_requests)
 
     ifIndications = \
-        SubtreeMIBEntry('1.2', pfc_updater, ValueType.INTEGER, pfc_updater.cpfcIfIndications)
+        SubtreeMIBEntry('1.2', pfc_updater, ValueType.INTEGER, pfc_updater.cpfc_if_indications)
 
 
 # cpfcIfPriorityTable = '1.2'
@@ -262,7 +262,7 @@ class cpfcIfPriorityTable(metaclass=MIBMeta, prefix='.1.3.6.1.4.1.9.9.813.1.2'):
     pfc_updater = PfcPrioUpdater()
 
     prioRequests = \
-        SubtreeMIBEntry('1.2', pfc_updater, ValueType.INTEGER, pfc_updater.requestsPerPriority)
+        SubtreeMIBEntry('1.2', pfc_updater, ValueType.INTEGER, pfc_updater.requests_per_priority)
 
     prioIndications = \
-        SubtreeMIBEntry('1.3', pfc_updater, ValueType.INTEGER, pfc_updater.indicationsPerPriority)
+        SubtreeMIBEntry('1.3', pfc_updater, ValueType.INTEGER, pfc_updater.indications_per_priority)
