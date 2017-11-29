@@ -1,3 +1,3 @@
 from . import ciscoPfcExtMIB
 from . import ciscoSwitchQosMIB
-from . import ciscoEntityFRUControlMIB
+from . import ciscoEntityFruControlMIB
