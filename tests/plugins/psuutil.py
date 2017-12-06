@@ -52,9 +52,7 @@ class PsuUtil():
         """ For testing purpose only """
         if not isinstance(index, int):
             return False
-        elif index == 1:
-            return self.psu1_status
-        elif index == 2:
-            return self.psu2_status
+        elif index > 0 and index <= self.num_of_psus:
+            return self.psu_status[index]
         else:
             return False
