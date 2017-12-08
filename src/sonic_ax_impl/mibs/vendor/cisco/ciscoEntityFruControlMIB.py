@@ -10,9 +10,6 @@ PSU_PLUGIN_MODULE_NAME = 'psuutil'
 PSU_PLUGIN_MODULE_PATH = "/usr/share/sonic/platform/plugins/{}.py".format(PSU_PLUGIN_MODULE_NAME)
 PSU_PLUGIN_CLASS_NAME = 'PsuUtil'
 
-# TODO: Remove once PSU util will be available directly
-sys.path.append("/usr/lib/python2.7/dist-packages/")
-
 class PowerStatusHandler:
     """
     Class to handle the SNMP request
