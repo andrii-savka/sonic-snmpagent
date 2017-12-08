@@ -66,9 +66,10 @@ class PowerStatusHandler:
     def getPsuStatus(self, sub_id):
         """
         :param sub_id: The 1-based sub-identifier query.
-        :return: the status of requested PSU
-                 1 - PSU has correct functionalling
-                 0 - PSU has a problem with functionalling
+        :return: the status of requested PSU according to cefcModuleOperStatus ModuleOperType
+                 2 - PSU has correct functionalling - ok
+                 7 - PSU has a problem with functionalling - failed
+        :ref: https://www.cisco.com/c/en/us/td/docs/switches/wan/mgx/mgx_8850/software/mgx_r2-0-10/pxm/reference/guide/pxm/cscoent.html
         """
         psu_index = self._getPsuIndex(sub_id)
 
@@ -78,9 +79,9 @@ class PowerStatusHandler:
         psu_status = self.psuutil.get_psu_status(psu_index)
 
         if psu_status:
-            return 1
+            return 2
 
-        return 0
+        return 7
 
 
 class cefcFruPowerStatusTable(metaclass=MIBMeta, prefix='.1.3.6.1.4.1.9.9.117.1.1.2'):

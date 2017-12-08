@@ -35,7 +35,7 @@ class TestPsuStatus(TestCase):
         value0 = response.values[0]
         self.assertEqual(value0.type_, ValueType.INTEGER)
         self.assertEqual(str(value0.name), str(oid))
-        self.assertEqual(value0.data, 1)
+        self.assertEqual(value0.data, 2)
 
     def test_getNextPsu1(self):
         oid = ObjectIdentifier(2, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 117, 1, 1, 2, 1, 2, 1))
@@ -51,7 +51,7 @@ class TestPsuStatus(TestCase):
         value0 = response.values[0]
         self.assertEqual(value0.type_, ValueType.INTEGER)
         self.assertEqual(str(value0.name), str(expected_oid))
-        self.assertEqual(value0.data, 0)
+        self.assertEqual(value0.data, 7)
 
     def test_getPsu2Status(self):
         oid = ObjectIdentifier(2, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 117, 1, 1, 2, 1, 2, 2))
@@ -66,7 +66,7 @@ class TestPsuStatus(TestCase):
         value0 = response.values[0]
         self.assertEqual(value0.type_, ValueType.INTEGER)
         self.assertEqual(str(value0.name), str(oid))
-        self.assertEqual(value0.data, 0)
+        self.assertEqual(value0.data, 7)
 
     def test_getNextPsu2(self):
         oid = ObjectIdentifier(2, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 117, 1, 1, 2, 1, 2, 2))
