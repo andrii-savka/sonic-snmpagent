@@ -24,21 +24,23 @@ class PowerStatusHandler:
             module = imp.load_source(PSU_PLUGIN_MODULE_NAME, PSU_PLUGIN_MODULE_PATH)
         except ImportError as e:
             mibs.logger.error("Failed to load PSU module '%s': %s" % (PSU_PLUGIN_MODULE_NAME, str(e)), True)
-            sys.exit()
+            return
+        except FileNotFoundError as e:
+            mibs.logger.error("Failed to get platform specific PSU module '%s': %s" % (PSU_PLUGIN_MODULE_NAME, str(e)), True)
+            return
 
         try:
             platform_psuutil_class = getattr(module, PSU_PLUGIN_CLASS_NAME)
             self.psuutil = platform_psuutil_class()
         except AttributeError as e:
             mibs.logger.error("Failed to instantiate '%s' class: %s" % (PLATFORM_SPECIFIC_CLASS_NAME, str(e)), True)
-            sys.exit()
 
     def _getPsuIndex(self, sub_id):
         """
         Get the PSU index from sub_id
         :return: the index of supported PSU
         """
-        if not sub_id or len(sub_id) > 1:
+        if not self.psuutil or not sub_id or len(sub_id) > 1:
             return None
 
         psu_index = int(sub_id[0])
@@ -53,6 +55,9 @@ class PowerStatusHandler:
         :param sub_id: The 1-based snmp sub-identifier query.
         :return: the next sub id.
         """
+        if not self.psuutil:
+            return None
+
         if not sub_id:
             return (1,)
 
