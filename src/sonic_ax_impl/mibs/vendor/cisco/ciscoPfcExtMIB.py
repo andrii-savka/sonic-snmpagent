@@ -17,6 +17,8 @@ class PfcUpdater(MIBUpdater):
         self.oid_sai_map, \
         self.oid_name_map = mibs.init_sync_d_interface_tables(self.db_conn)
 
+        self.update_data()
+
     def update_data(self):
         """
         Update redis (caches config)

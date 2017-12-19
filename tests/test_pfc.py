@@ -43,7 +43,7 @@ class TestPfcPortCounters(TestCase):
         oid = ObjectIdentifier(32, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 813, 1, 1, 1, 1, 1))
         expected_oid = ObjectIdentifier(32, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 813, 1, 1, 1, 1, 5))
         get_pdu = GetNextPDU(
-            header=PDUHeader(1, PduTypes.GET, 16, 0, 42, 0, 0, 0),
+            header=PDUHeader(1, PduTypes.GET_NEXT, 16, 0, 42, 0, 0, 0),
             oids=[oid]
         )
 
@@ -162,3 +162,36 @@ class TestPfcPortCounters(TestCase):
         self.assertEqual(value0.type_, ValueType.INTEGER)
         self.assertEqual(str(value0.name), str(expected_oid))
         self.assertEqual(value0.data, 2)
+
+    def test_getPfcSubtree(self):
+        # Subtree for port
+        oid = ObjectIdentifier(32, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 813, 1, 1))
+        expected_oid = ObjectIdentifier(32, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 813, 1, 1, 1, 1, 1))
+        get_pdu = GetNextPDU(
+            header=PDUHeader(1, PduTypes.GET_NEXT, 16, 0, 42, 0, 0, 0),
+            oids=[oid]
+        )
+
+        encoded = get_pdu.encode()
+        response = get_pdu.make_response(self.lut_port)
+
+        value0 = response.values[0]
+        self.assertEqual(value0.type_, ValueType.INTEGER)
+        self.assertEqual(str(value0.name), str(expected_oid))
+        self.assertEqual(value0.data, 4)
+
+        # Subtree for Priority
+        oid = ObjectIdentifier(33, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 813, 1, 2))
+        expected_oid = ObjectIdentifier(33, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 813, 1, 2, 1, 2, 1, 1))
+        get_pdu = GetNextPDU(
+            header=PDUHeader(1, PduTypes.GET_NEXT, 16, 0, 42, 0, 0, 0),
+            oids=[oid]
+        )
+
+        encoded = get_pdu.encode()
+        response = get_pdu.make_response(self.lut_prio)
+
+        value0 = response.values[0]
+        self.assertEqual(value0.type_, ValueType.INTEGER)
+        self.assertEqual(str(value0.name), str(expected_oid))
+        self.assertEqual(value0.data, 1)

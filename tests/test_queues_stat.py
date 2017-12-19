@@ -43,7 +43,7 @@ class TestQueueCounters(TestCase):
         oid = ObjectIdentifier(8, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 580, 1, 5, 5, 1, 4, 1, 2, 1, 1))
         expected_oid = ObjectIdentifier(8, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 580, 1, 5, 5, 1, 4, 1, 2, 1, 2))
         get_pdu = GetNextPDU(
-            header=PDUHeader(1, PduTypes.GET, 16, 0, 42, 0, 0, 0),
+            header=PDUHeader(1, PduTypes.GET_NEXT, 16, 0, 42, 0, 0, 0),
             oids=[oid]
         )
 
@@ -51,8 +51,6 @@ class TestQueueCounters(TestCase):
         response = get_pdu.make_response(self.lut)
         print(response)
 
-        n = len(response.values)
-        print('values = ' + str(n))
         value0 = response.values[0]
         self.assertEqual(value0.type_, ValueType.INTEGER)
         self.assertEqual(str(value0.name), str(expected_oid))
@@ -89,3 +87,19 @@ class TestQueueCounters(TestCase):
         self.assertEqual(value0.type_, ValueType.NO_SUCH_INSTANCE)
         self.assertEqual(str(value0.name), str(oid))
         self.assertEqual(value0.data, None)
+
+    def test_getSubtreeForQueueCounters(self):
+        oid = ObjectIdentifier(8, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 580, 1, 5, 5))
+        expected_oid = ObjectIdentifier(8, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 580, 1, 5, 5, 1, 4, 1, 2, 1, 1))
+        get_pdu = GetNextPDU(
+            header=PDUHeader(1, PduTypes.GET_NEXT, 16, 0, 42, 0, 0, 0),
+            oids=[oid]
+        )
+
+        encoded = get_pdu.encode()
+        response = get_pdu.make_response(self.lut)
+
+        value0 = response.values[0]
+        self.assertEqual(value0.type_, ValueType.INTEGER)
+        self.assertEqual(str(value0.name), str(expected_oid))
+        self.assertEqual(value0.data, 1)
