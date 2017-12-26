@@ -62,7 +62,7 @@ class QueueStatUpdater(MIBUpdater):
         self.mib_oid_to_queue_map = {}
         self.mib_oid_list = []
 
-        self.reinit_data()
+        self.queue_type_map = {}
 
     def reinit_data(self):
         """
@@ -101,20 +101,23 @@ class QueueStatUpdater(MIBUpdater):
     def update_stats(self):
         """
         Update statistics.
+        1. Get and sort port list to keep the order in MIB
+        2. Prepare OID and get a statistic for each queue of each port
+        3. Get and sort LAG ports list to keep the order in MIB
+        4. Prepare OID for LAG and prepare a statistic for each queue of each LAG port
         """
         # Clear previous data
         self.mib_oid_to_queue_map = {}
         self.mib_oid_list = []
 
-        # Update queue counters for port
+        # Sort the ports to keep the OID order in the MIB
         if_range = sorted(list(self.oid_sai_map.keys()))
+        # Update queue counters for port
         for if_index in if_range:
-            if_queues = []
-            try:
-                if_queues = self.port_queue_list_map[if_index]
-            except KeyError:
+            if if_index not in self.port_queue_list_map:
                 # Port does not has a queues, continue..
                 continue
+            if_queues = self.port_queue_list_map[if_index]
 
             for queue in if_queues:
                 # Get queue type and statistics
@@ -135,19 +138,19 @@ class QueueStatUpdater(MIBUpdater):
                         self.mib_oid_list.append(mib_oid)
                         self.mib_oid_to_queue_map[mib_oid] = counter_value
 
-        # Update queue counters for LAG
+        # Sort the LAG ports to keep the OID order in the MIB
         lag_range = sorted(list(self.oid_lag_name_map.keys()))
+        # Update queue counters for LAG
         for lag_index in lag_range:
             lag_oid_list = []
             lag_oid_to_queue_map = {}
             # Get counters for each LAG member
             for lag_member in self.lag_name_if_name_map[self.oid_lag_name_map[lag_index]]:            
                 lag_member_queues = []
-                try:
-                    lag_member_queues = self.port_queue_list_map[mibs.get_index(lag_member)]
-                except KeyError:
+                if mibs.get_index(lag_member) not in self.port_queue_list_map:
                     # LAG member does not has a queues, continue..
-                    continue
+                    continue                    
+                lag_member_queues = self.port_queue_list_map[mibs.get_index(lag_member)]
 
                 for queue in lag_member_queues:
                     # Get queue type and statistics
@@ -171,7 +174,7 @@ class QueueStatUpdater(MIBUpdater):
                             else:
                                 lag_oid_to_queue_map[mib_oid] += counter_value
 
-            # Add LAG port counters to MIB
+            # Append the LAG port counters to the MIB with keeping the OID order
             self.mib_oid_list += lag_oid_list
             self.mib_oid_to_queue_map.update(lag_oid_to_queue_map)
 

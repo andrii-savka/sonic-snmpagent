@@ -22,6 +22,14 @@ class TestPfcPortCounters(TestCase):
     def setUpClass(cls):
         cls.lut_port = MIBTable(ciscoPfcExtMIB.cpfcIfTable)
         cls.lut_prio = MIBTable(ciscoPfcExtMIB.cpfcIfPriorityTable)
+		
+		# Update MIBs
+        for updater in cls.lut_port.updater_instances:
+            updater.reinit_data()
+            updater.update_data()
+        for updater in cls.lut_prio.updater_instances:
+            updater.reinit_data()
+            updater.update_data()
 
     def test_getPduRequestForPort(self):
         oid = ObjectIdentifier(32, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 813, 1, 1, 1, 1, 1))

@@ -39,6 +39,12 @@ class PfcUpdater(MIBUpdater):
         super().__init__()
         self.db_conn = mibs.init_db()
 
+        self.if_name_map = {}
+        self.if_alias_map = {}
+        self.if_id_map = {}
+        self.oid_sai_map = {}
+        self.oid_name_map = {}
+
         self.lag_name_if_name_map = {}
         self.if_name_lag_name_map = {}
         self.oid_lag_name_map = {}
@@ -46,9 +52,6 @@ class PfcUpdater(MIBUpdater):
         # cache of interface counters
         self.if_counters = {}
         self.if_range = []
-
-        # init data from Counter DB.
-        self.reinit_data()
 
     def get_next(self, sub_id):
         """

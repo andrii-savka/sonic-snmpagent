@@ -22,6 +22,11 @@ class TestQueueCounters(TestCase):
     def setUpClass(cls):
         cls.lut = MIBTable(ciscoSwitchQosMIB.csqIfQosGroupStatsTable)
 
+        # Update MIBs
+        for updater in cls.lut.updater_instances:
+            updater.reinit_data()
+            updater.update_data()
+
     def test_getQueueCounters(self):
         for counter_id in range(1, 8):
             oid = ObjectIdentifier(8, 0, 0, 0, (1, 3, 6, 1, 4, 1, 9, 9, 580, 1, 5, 5, 1, 4, 1, 2, 1, 1))
