@@ -6,6 +6,26 @@ from ax_interface import MIBMeta, ValueType, MIBUpdater, MIBEntry, SubtreeMIBEnt
 from ax_interface.encodings import ObjectIdentifier
 
 class PfcUpdater(MIBUpdater):
+    """
+    Class to update the info from Counter DB and to handle the SNMP request
+    """
+    def __init__(self):
+        super().__init__()
+        self.db_conn = mibs.init_db()
+
+        self.if_name_map = {}
+        self.if_alias_map = {}
+        self.if_id_map = {}
+        self.oid_sai_map = {}
+        self.oid_name_map = {}
+
+        self.lag_name_if_name_map = {}
+        self.if_name_lag_name_map = {}
+        self.oid_lag_name_map = {}
+
+        # cache of interface counters
+        self.if_counters = {}
+        self.if_range = []
 
     def reinit_data(self):
         """
@@ -16,6 +36,8 @@ class PfcUpdater(MIBUpdater):
         self.if_id_map, \
         self.oid_sai_map, \
         self.oid_name_map = mibs.init_sync_d_interface_tables(self.db_conn)
+
+        self.update_data()
 
     def update_data(self):
         """
@@ -32,21 +54,6 @@ class PfcUpdater(MIBUpdater):
 
         self.if_range = sorted(list(self.oid_sai_map.keys()) + list(self.oid_lag_name_map.keys()))
         self.if_range = [(i,) for i in self.if_range]
-
-    def __init__(self):
-        super().__init__()
-        self.db_conn = mibs.init_db()
-
-        self.lag_name_if_name_map = {}
-        self.if_name_lag_name_map = {}
-        self.oid_lag_name_map = {}
-
-        # cache of interface counters
-        self.if_counters = {}
-        self.if_range = []
-
-        # init data from Counter DB.
-        self.reinit_data()
 
     def get_next(self, sub_id):
         """
